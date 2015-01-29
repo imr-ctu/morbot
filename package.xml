@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<package>
+  <name>morbot</name>
+  <version>0.0.0</version>
+  <description>The morbot package provides the driver for the morbot robot of the IMR Group at the Czech Technical University in Prague.</description>
+
+  <maintainer email="gael.ecorchard@ciirc.cvut.cz">Gaël Ecorchard</maintainer>
+
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>BSD</license>
+
+
+  <!-- Url tags are optional, but mutiple are allowed, one per tag -->
+  <!-- Optional attribute type can be: website, bugtracker, or repository -->
+  <!-- Example: -->
+  <!-- <url type="website">http://wiki.ros.org/morbot</url> -->
+
+
+  <author email="gael.ecorchard@ciirc.cvut.cz">Gaël Ecorchard</author>
+  <author email="kosnar@labe.felk.cvut.cz">Karel Košnar</author>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>tf</build_depend>
+
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>tf</run_depend>
+
+
+  <export>
+  </export>
+</package>
