@@ -75,6 +75,7 @@ int main(int argc, char **argv)
   {
     ros::spinOnce();
 
+    ROS_DEBUG("Getting position");
     if (!_avr.getPosition(&x, &y, &yaw))
     {
       ROS_FATAL_STREAM("Communication error on " << device_name << " when getting position, exiting");
@@ -83,6 +84,7 @@ int main(int argc, char **argv)
 
     ros::Time timestamp = ros::Time::now();
 
+    ROS_DEBUG("Sending messages");
     geometry_msgs::Pose2D pose;
     pose.x = x;
     pose.y = y;
