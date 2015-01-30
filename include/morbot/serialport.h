@@ -28,9 +28,9 @@ class SerialPort
     int writeSerialFloat(float);
     int serialAvailable();
     bool serialFlush();
-    unsigned char readSerial();
-    void readSerialInt(int16_t*);
-    void readSerialFloat(float*);
+    bool readSerial(unsigned char* c);
+    bool readSerialInt(int16_t*);
+    bool readSerialFloat(float*);
 };
 
 

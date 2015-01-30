@@ -51,6 +51,7 @@ void SerialPort::setSerialParams()
   options.c_iflag &= ~(IXON | IXOFF | IXANY | INLCR | ICRNL);
   options.c_oflag &= ~(OPOST | ONLCR | OCRNL | ONLRET | OFILL | OFDEL);
   options.c_cc[VMIN] = 1;
+  /* No timeout. */
   options.c_cc[VTIME] = 0;
   tcsetattr(fd, TCSAFLUSH, &options);
   std::cout << "Serial port parameters set.\n";
@@ -188,36 +189,69 @@ bool SerialPort::serialFlush()
 }
 
 /** Read a character from the serial port.
+ *
+ * @return True if everything went allright.
  */
-unsigned char SerialPort::readSerial()
+bool SerialPort::readSerial(unsigned char* c)
 {
-  unsigned char response;
-  const int nbytes = read(fd, &response, sizeof(response));
-  if (nbytes == -1)
+  // Initialize file descriptor sets
+  fd_set read_fds;
+  fd_set write_fds;
+  fd_set except_fds;
+  FD_ZERO(&read_fds);
+  FD_ZERO(&write_fds);
+  FD_ZERO(&except_fds);
+  FD_SET(fd, &read_fds);
+
+  // Set timeout to 1.0 seconds
+  struct timeval timeout;
+  timeout.tv_sec = 1;
+  timeout.tv_usec = 0;
+
+  // Wait for input to become ready or until the time out; the first parameter is
+  // 1 more than the largest file descriptor in any of the sets
+  if (select(fd + 1, &read_fds, &write_fds, &except_fds, &timeout) == 1)
   {
-    std::cerr << "Cannot read on serial port\n";
-    return 0;
+    // fd is ready for reading
+    const int nbytes = read(fd, c, sizeof(*c));
+    if (nbytes == -1)
+    {
+      std::cerr << "Cannot read on serial port\n";
+      return false;
+    }
   }
-  return response;
+  else
+  {
+    // timeout or error
+    return false;
+  }
+  return  true;
 }
 
 /** Read an integer from the serial port.
  */
-void SerialPort::readSerialInt(int16_t* val)
+bool SerialPort::readSerialInt(int16_t* val)
 {
-  unsigned char *msg = (unsigned char*)val;
-  msg[1] = readSerial();
-  msg[0] = readSerial();
+  unsigned char* msg = (unsigned char*)val;
+  if (!readSerial(msg + 1))
+  {
+    return false;
+  }
+  return readSerial(msg);
 }
 
 /** Read a float from the serial port.
  */
-void SerialPort::readSerialFloat(float* f)
+bool SerialPort::readSerialFloat(float* f)
 {
-  unsigned char *msg = (unsigned char*)f;
+  unsigned char* msg = (unsigned char*)f;
   for (unsigned int i = 0; i < sizeof(float); i++)
   {
-    msg[i] = readSerial();
+    if (!readSerial(msg + i))
+    {
+      return false;
+    }
   }
+  return true;
 }
 

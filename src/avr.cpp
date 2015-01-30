@@ -163,9 +163,18 @@ bool AVR::getPosition(float* px, float* py, float* pa)
   int16_t y;
   int16_t a;
 
-  sp.readSerialInt(&x);
-  sp.readSerialInt(&y);
-  sp.readSerialInt(&a);
+  if (!sp.readSerialInt(&x))
+  {
+    return false;
+  }
+  if (!sp.readSerialInt(&y))
+  {
+    return false;
+  }
+  if (!sp.readSerialInt(&a))
+  {
+    return false;
+  }
 
   /* Conversion from ticks to meters and radians. */
   *px = ((float)x) / M_TICKS;
@@ -191,10 +200,31 @@ bool AVR::getIRs(float* sh1, float* sh2, float* sh3, float* sh4)
     return false;
   }
 
-  *sh1 = (float)sp.readSerial();
-  *sh2 = (float)sp.readSerial();
-  *sh3 = (float)sp.readSerial();
-  *sh4 = (float)sp.readSerial();
+  unsigned char raw;
+  if (!sp.readSerial(&raw))
+  {
+    return false;
+  }
+  *sh1 = static_cast<float>(raw);
+
+  if (!sp.readSerial(&raw))
+  {
+    return false;
+  }
+  *sh2 = static_cast<float>(raw);
+
+  if (!sp.readSerial(&raw))
+  {
+    return false;
+  }
+  *sh3 = static_cast<float>(raw);
+
+  if (!sp.readSerial(&raw))
+  {
+    return false;
+  }
+  *sh4 = static_cast<float>(raw);
+
   return true;
 }
 
@@ -215,9 +245,19 @@ bool AVR::getSonars(float* sonar1, float* sonar2)
     return false;
   }
 
+  unsigned char raw;
+  if (!sp.readSerial(&raw))
+  {
+    return false;
+  }
   /* Raw sonar readings are in centimeters. Convert to meters. */
-  *sonar1 = (float(sp.readSerial()) / 100);
-  *sonar2 = (float(sp.readSerial()) / 100);
+  *sonar1 = static_cast<float>(raw) / 100.0;
+
+  if (!sp.readSerial(&raw))
+  {
+    return false;
+  }
+  *sonar2 = static_cast<float>(raw) / 100.0;
   return true;
 }
 
@@ -237,7 +277,11 @@ bool AVR::getBumpers(uint8_t* bump1, uint8_t* bump2, uint8_t* bump3, uint8_t* bu
     return false;
   }
 
-  unsigned char bumps = sp.readSerial();
+  unsigned char bumps;
+  if (!sp.readSerial(&bumps))
+  {
+    return false;
+  }
 
   /* Front right bumper. */
   uint8_t masked = bumps & 0x80;
@@ -296,7 +340,7 @@ bool AVR::getBumpers(uint8_t* bump1, uint8_t* bump2, uint8_t* bump3, uint8_t* bu
     *bump5 = 0;
   }
 
-  /* Left read bumper. */
+  /* Left rear bumper. */
   masked = bumps & 0x04;
   if(masked > 0)
   {
