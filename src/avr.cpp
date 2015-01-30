@@ -20,49 +20,87 @@ AVR::~AVR()
 
 /** Open the serial port and set parameters.
  */
-void AVR::openSerial(const char* port)
+bool AVR::openSerial(const char* port)
 {
   sp.openSerial(port);
-  sp.serialFlush();
+  return sp.serialFlush();
 }
 
 /** Turn on the motors.
+ *
+ * @return True if the message was sent correctly.
  */
-void AVR::setMotorsOn()
+bool AVR::setMotorsOn()
 {
-  sp.writeSerial(0xA5);
+  if (sp.writeSerial(0xA5) == -1)
+  {
+    return false;
+  }
+  return true;
 }
 
 /** Turn off motors.
+ *
+ * @return True if the message was sent correctly.
  */
-void AVR::setMotorsOff()
+bool AVR::setMotorsOff()
 {
-  sp.writeSerial(0x99);
+  if (sp.writeSerial(0x99) == -1)
+  {
+    return false;
+  }
+  return true;
 }
 
 /*
  * Nastavení konstanty pro pøevod pùlsù na radiány.
+ *
+ * @return True if the message was sent correctly.
  */
-void AVR::setConstant(float c)
+bool AVR::setConstant(float c)
 {
-  sp.writeSerial('c');
-  sp.writeSerialFloat(c);
+  if (sp.writeSerial('c') == -1)
+  {
+    return false;
+  }
+  if (sp.writeSerialFloat(c) != sizeof(float))
+  {
+    return false;
+  }
+  return true;
 }
 
 /** Set up the robot linear and angular velocities.
+ *
+ * @return True if the message was sent correctly.
  */
-void AVR::setSpeedAndTurn(signed char speed, signed char turn)
+bool AVR::setSpeedAndTurn(signed char speed, signed char turn)
 {
-  sp.writeSerial(0x96);
-  sp.writeSerial((unsigned char)speed);
+  if (sp.writeSerial(0x96) == -1)
+  {
+    return false;
+  }
+  if (sp.writeSerial((unsigned char)speed) == -1)
+  {
+    return false;
+  }
   usleep(TIMEOUT);
-  sp.writeSerial((unsigned char)turn);
-  sp.writeSerial(0x96);
+  if (sp.writeSerial((unsigned char)turn) == -1)
+  {
+    return false;
+  }
+  if (sp.writeSerial(0x96) == -1)
+  {
+    return false;
+  }
+  return true;
 }
 
 /** Set the robot position.
+ *
+ * @return True if the message was sent correctly.
  */
-void AVR::setPosition(float posX, float posY, float posYaw)
+bool AVR::setPosition(float posX, float posY, float posYaw)
 {
   posX *= M_TICKS;
   posY *= M_TICKS;
@@ -84,10 +122,25 @@ void AVR::setPosition(float posX, float posY, float posYaw)
     posYaw += 2 * M_PI;
   }
 
-  sp.writeSerial(0xAA);
-  sp.writeSerialInt((int16_t)posX);
-  sp.writeSerialInt((int16_t)posY);
-  sp.writeSerialInt((int16_t)(posYaw * 10000.0));
+  if (sp.writeSerial(0xAA) == -1)
+  {
+    return false;
+  }
+  if (sp.writeSerialInt((int16_t)posX) != 2)
+  {
+    return false;
+  }
+  ;
+  if (sp.writeSerialInt((int16_t)posY) != 2)
+  {
+    return false;
+  }
+  ;
+  if (sp.writeSerialInt((int16_t)(posYaw * 10000.0)) != 2)
+  {
+    return false;
+  }
+  return true;
 }
 
 /** Get the robot position.
@@ -96,9 +149,15 @@ void AVR::setPosition(float posX, float posY, float posYaw)
  */
 bool AVR::getPosition(float* px, float* py, float* pa)
 {
-  sp.serialFlush();
+  if (!sp.serialFlush())
+  {
+    return false;
+  }
   /* Request. */
-  sp.writeSerial(0x55);
+  if (sp.writeSerial(0x55) == -1)
+  {
+    return false;
+  }
 
   int16_t x;
   int16_t y;
@@ -116,43 +175,67 @@ bool AVR::getPosition(float* px, float* py, float* pa)
 }
 
 /** Get the four infrared sensor readings.
+ *
+ * @return True if everything went allright.
  */
-void AVR::getIRs(float* sh1, float* sh2, float* sh3, float* sh4)
+bool AVR::getIRs(float* sh1, float* sh2, float* sh3, float* sh4)
 {
-  sp.serialFlush();
+  if (!sp.serialFlush())
+  {
+    return false;
+  }
 
   /* Request. */
-  sp.writeSerial(0x69);
+  if (sp.writeSerial(0x69) == -1)
+  {
+    return false;
+  }
 
   *sh1 = (float)sp.readSerial();
   *sh2 = (float)sp.readSerial();
   *sh3 = (float)sp.readSerial();
   *sh4 = (float)sp.readSerial();
+  return true;
 }
 
 /** Get the two sonar readings (in meters).
+ *
+ * @return True if everything went allright.
  */
-void AVR::getSonars(float* sonar1, float* sonar2)
+bool AVR::getSonars(float* sonar1, float* sonar2)
 {
-  sp.serialFlush();
+  if (!sp.serialFlush())
+  {
+    return false;
+  }
 
   /* Request. */
-  sp.writeSerial(0x5A);
+  if (sp.writeSerial(0x5A) == -1)
+  {
+    return false;
+  }
 
   /* Raw sonar readings are in centimeters. Convert to meters. */
   *sonar1 = (float(sp.readSerial()) / 100);
   *sonar2 = (float(sp.readSerial()) / 100);
+  return true;
 }
 
 /** Get the eight bumper readings.
  */
-void AVR::getBumpers(uint8_t* bump1, uint8_t* bump2, uint8_t* bump3, uint8_t* bump4,
+bool AVR::getBumpers(uint8_t* bump1, uint8_t* bump2, uint8_t* bump3, uint8_t* bump4,
     uint8_t* bump5, uint8_t* bump6, uint8_t* bump7, uint8_t* bump8)
 {
-  sp.serialFlush();
+  if (!sp.serialFlush())
+  {
+    return false;
+  }
 
   /* Request. */
-  sp.writeSerial(0x66);
+  if (sp.writeSerial(0x66) == -1)
+  {
+    return false;
+  }
 
   unsigned char bumps = sp.readSerial();
 
@@ -245,5 +328,6 @@ void AVR::getBumpers(uint8_t* bump1, uint8_t* bump2, uint8_t* bump3, uint8_t* bu
   {
     *bump8 = 0;
   }	
+  return true;
 }
 

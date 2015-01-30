@@ -104,35 +104,59 @@ void SerialPort::closeSerial()
 }
 
 /** Write out a character on the serial port.
+ *
+ * @return the number of bytes written, or -1.
  */
-void SerialPort::writeSerial(unsigned char msg)
+int SerialPort::writeSerial(unsigned char msg)
 {
-  int written = write(fd, &msg, sizeof(msg));
+  const int written = write(fd, &msg, sizeof(msg));
   if(written < 0)
   {
     std::cerr << "ERROR writing on serial port.";
   }
   usleep(TIMEOUT);
+  return written;
 }
 
 /** Write out an integer on the serial port.
+ *
+ * @return the number of bytes written, or -1.
  */
-void SerialPort::writeSerialInt(int16_t val)
+int SerialPort::writeSerialInt(int16_t val)
 {
-  unsigned char *msg = (unsigned char*)&val;
-  writeSerial(msg[1]);
-  writeSerial(msg[0]);
+  /* Caution: not portable */
+  const unsigned char *msg = (unsigned char*)&val;
+  const int written1 = writeSerial(msg[1]);
+  int written0 = -1;
+  if (written1 != -1)
+  {
+    written0 = writeSerial(msg[0]);
+  }
+  if (written0 == -1)
+  {
+    return -1;
+  }
+  return written0 + written1;
 }
 
 /** Write out a float on the serial port.
  */
-void SerialPort::writeSerialFloat(float f)
+int SerialPort::writeSerialFloat(float f)
 {
+  /* Caution: not portable */
   unsigned char *msg = (unsigned char*)&f;
+  int sum_written = 0;
   for (unsigned int i = 0; i < sizeof(float); i++)
   {
-    writeSerial(msg[i]);
+    const int written = writeSerial(msg[i]);
+    if (written == -1)
+    {
+      sum_written = -1;
+      return -1;
+    }
+    sum_written += written;
   }
+  return sum_written;
 }
 
 /** Checkout the number of available characters on the serial port.
@@ -147,13 +171,20 @@ int SerialPort::serialAvailable()
 }
 
 /** Flush the serial port.
+ *
+ * @return True if everything went allright.
  */
-void SerialPort::serialFlush()
+bool SerialPort::serialFlush()
 {
   while (serialAvailable() > 0)
   {
-    read(fd, NULL, sizeof(char));
+    const int nbytes = read(fd, NULL, sizeof(char));
+    if (nbytes == -1)
+    {
+      return false;
+    }
   }
+  return true;
 }
 
 /** Read a character from the serial port.
@@ -161,7 +192,12 @@ void SerialPort::serialFlush()
 unsigned char SerialPort::readSerial()
 {
   unsigned char response;
-  read(fd, &response, sizeof(response));
+  const int nbytes = read(fd, &response, sizeof(response));
+  if (nbytes == -1)
+  {
+    std::cerr << "Cannot read on serial port\n";
+    return 0;
+  }
   return response;
 }
 

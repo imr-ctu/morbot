@@ -28,7 +28,10 @@ void velCallback(const geometry_msgs::Twist::ConstPtr& msg)
     a = 127;
   if (a < -128)
     a = -128;
-  _avr.setSpeedAndTurn((signed char) v, (signed char) a);
+  if (!_avr.setSpeedAndTurn(static_cast<signed char>(v), static_cast<signed char>(a)))
+  {
+    ROS_ERROR("Communication error on serial port");
+  }
 }
 
 int main(int argc, char **argv)
@@ -44,11 +47,23 @@ int main(int argc, char **argv)
   std::string device_name;
   nh.param<std::string>("serial_port", device_name, "/dev/ttyUSB0");
 
-  _avr.openSerial(device_name.c_str());
-  _avr.setMotorsOn();
-  _avr.setSpeedAndTurn(0, 0);
+  if (!_avr.openSerial(device_name.c_str()))
+  {
+    ROS_FATAL_STREAM("Communication error on " << device_name << ", exiting");
+    return 1;
+  }
+  if (!_avr.setMotorsOn())
+  {
+    ROS_FATAL_STREAM("Communication error on " << device_name << " when enabling motors, exiting");
+    return 1;
+  }
+  if (!_avr.setSpeedAndTurn(0, 0))
+  {
+    ROS_FATAL_STREAM("Communication error on " << device_name << " when setting velocities, exiting");
+    return 1;
+  }
 
-  ros::Subscriber vel = nh.subscribe("cmd_vel", 1000, velCallback);
+  ros::Subscriber vel = nh.subscribe("cmd_vel", 1, velCallback);
 
   ros::Publisher pose_pub = nh.advertise<geometry_msgs::Pose2D>("pose", 1000);
   ros::Publisher odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 1000);
@@ -59,7 +74,12 @@ int main(int argc, char **argv)
   while (ros::ok())
   {
     ros::spinOnce();
-    _avr.getPosition(&x, &y, &yaw);
+
+    if (!_avr.getPosition(&x, &y, &yaw))
+    {
+      ROS_FATAL_STREAM("Communication error on " << device_name << " when getting position, exiting");
+      return 1;
+    }
 
     ros::Time timestamp = ros::Time::now();
 
@@ -86,7 +106,12 @@ int main(int argc, char **argv)
     br.sendTransform(tf::StampedTransform(transform, timestamp, "world", "base_link"));
     loop_rate.sleep();
   }
-  _avr.setMotorsOff();
+
+  if (!_avr.setMotorsOff())
+  {
+    ROS_FATAL_STREAM("Communication error on " << device_name << " when disabling motors, exiting");
+    return 1;
+  }
 
   return 0;
 }

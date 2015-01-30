@@ -23,11 +23,11 @@ class SerialPort
     void openSerial(const char*);
     void closeSerial(); 
     bool isOpened();  
-    void writeSerial(unsigned char);
-    void writeSerialInt(int16_t);
-    void writeSerialFloat(float);
+    int writeSerial(unsigned char);
+    int writeSerialInt(int16_t);
+    int writeSerialFloat(float);
     int serialAvailable();
-    void serialFlush();
+    bool serialFlush();
     unsigned char readSerial();
     void readSerialInt(int16_t*);
     void readSerialFloat(float*);

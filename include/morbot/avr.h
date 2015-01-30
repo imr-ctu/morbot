@@ -11,16 +11,16 @@ class AVR
     AVR();
     ~AVR();
 
-    void openSerial(const char* port);
-    void setMotorsOn();
-    void setMotorsOff();
-    void setConstant(float);
-    void setSpeedAndTurn(signed char speed, signed char turn);
-    void setPosition(float posX, float posY, float posYaw);
+    bool openSerial(const char* port);
+    bool setMotorsOn();
+    bool setMotorsOff();
+    bool setConstant(float);
+    bool setSpeedAndTurn(signed char speed, signed char turn);
+    bool setPosition(float posX, float posY, float posYaw);
     bool getPosition(float* px, float* py, float* pa);
-    void getIRs(float* sh1, float* sh2, float* sh3, float* sh4);
-    void getSonars(float* sonar1, float* sonar2);
-    void getBumpers(uint8_t*, uint8_t*, uint8_t*, uint8_t*, uint8_t*, uint8_t*, uint8_t*, uint8_t*);
+    bool getIRs(float* sh1, float* sh2, float* sh3, float* sh4);
+    bool getSonars(float* sonar1, float* sonar2);
+    bool getBumpers(uint8_t*, uint8_t*, uint8_t*, uint8_t*, uint8_t*, uint8_t*, uint8_t*, uint8_t*);
 
   private:
 
