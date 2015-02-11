@@ -72,6 +72,15 @@ bool AVR::setConstant(float c)
  */
 bool AVR::setSpeedAndTurn(signed char speed, signed char turn)
 {
+  /* The morbot cannot turn exactly on place!
+  This ugly workaround seems to work.
+  speed = 1 also causes troubles.
+  */
+  if ((turn != 0) && (-2 < speed) && (speed < 2))
+  {
+    speed = 2;
+  }
+
   if (sp_.writeSerial(0x96) == -1)
   {
     return false;
