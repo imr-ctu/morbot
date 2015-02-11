@@ -1,6 +1,7 @@
 #include <morbot/serialport.h>
 
-#define TIMEOUT 1000
+/* usleep after a write operation on serial port, in microsecond */
+#define TIMEOUT_AFTER_WRITE 10
 
 SerialPort::SerialPort()
 {
@@ -115,7 +116,7 @@ int SerialPort::writeSerial(unsigned char msg)
   {
     std::cerr << "ERROR writing on serial port.";
   }
-  usleep(TIMEOUT);
+  usleep(TIMEOUT_AFTER_WRITE);
   return written;
 }
 
