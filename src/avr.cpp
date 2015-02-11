@@ -80,6 +80,7 @@ bool AVR::setSpeedAndTurn(signed char speed, signed char turn)
   {
     return false;
   }
+  usleep(TIMEOUT);
   if (sp.writeSerial((unsigned char)speed) == -1)
   {
     return false;
@@ -89,6 +90,7 @@ bool AVR::setSpeedAndTurn(signed char speed, signed char turn)
   {
     return false;
   }
+  usleep(TIMEOUT);
   if (sp.writeSerial(0x96) == -1)
   {
     return false;
