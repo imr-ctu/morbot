@@ -10,29 +10,32 @@
 
 class SerialPort
 {
-  private:
-
-    int fd; 
-    termios savedAttributes;
-    void setSerialParams();
-    void resetSerialParams();
-
   public:
 
     SerialPort();
     ~SerialPort();
 
-    void openSerial(const char*);
+    bool openSerial(const char* port);
     void closeSerial(); 
     bool isOpened();  
-    int writeSerial(unsigned char);
-    int writeSerialInt(int16_t);
-    int writeSerialFloat(float);
+
+    int writeSerial(unsigned char msg);
+    int writeSerialInt(int16_t val);
+    int writeSerialFloat(float f);
     int serialAvailable();
+
     bool serialFlush();
     bool readSerial(unsigned char* c);
-    bool readSerialInt(int16_t*);
-    bool readSerialFloat(float*);
+    bool readSerialInt(int16_t* val);
+    bool readSerialFloat(float* f);
+
+  private:
+
+    bool setSerialParams();
+    void resetSerialParams();
+
+    int fd_; 
+    termios saved_attributes_;
 };
 
 

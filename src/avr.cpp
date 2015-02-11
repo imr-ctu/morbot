@@ -13,15 +13,14 @@ AVR::AVR()
 
 AVR::~AVR()
 {
-  sp.closeSerial();
+  sp_.closeSerial();
 }
 
 /** Open the serial port and set parameters.
  */
 bool AVR::openSerial(const char* port)
 {
-  sp.openSerial(port);
-  return sp.serialFlush();
+  return sp_.openSerial(port) && sp_.serialFlush();
 }
 
 /** Turn on the motors.
@@ -30,7 +29,7 @@ bool AVR::openSerial(const char* port)
  */
 bool AVR::setMotorsOn()
 {
-  if (sp.writeSerial(0xA5) == -1)
+  if (sp_.writeSerial(0xA5) == -1)
   {
     return false;
   }
@@ -43,25 +42,24 @@ bool AVR::setMotorsOn()
  */
 bool AVR::setMotorsOff()
 {
-  if (sp.writeSerial(0x99) == -1)
+  if (sp_.writeSerial(0x99) == -1)
   {
     return false;
   }
   return true;
 }
 
-/*
- * Nastavení konstanty pro pøevod pùlsù na radiány.
+/** Configure the number of ticks / 2 rad motor turn.
  *
  * @return True if the message was sent correctly.
  */
 bool AVR::setConstant(float c)
 {
-  if (sp.writeSerial('c') == -1)
+  if (sp_.writeSerial('c') == -1)
   {
     return false;
   }
-  if (sp.writeSerialFloat(c) != sizeof(float))
+  if (sp_.writeSerialFloat(c) != sizeof(float))
   {
     return false;
   }
@@ -74,19 +72,19 @@ bool AVR::setConstant(float c)
  */
 bool AVR::setSpeedAndTurn(signed char speed, signed char turn)
 {
-  if (sp.writeSerial(0x96) == -1)
+  if (sp_.writeSerial(0x96) == -1)
   {
     return false;
   }
-  if (sp.writeSerial((unsigned char)speed) == -1)
+  if (sp_.writeSerial((unsigned char)speed) == -1)
   {
     return false;
   }
-  if (sp.writeSerial((unsigned char)turn) == -1)
+  if (sp_.writeSerial((unsigned char)turn) == -1)
   {
     return false;
   }
-  if (sp.writeSerial(0x96) == -1)
+  if (sp_.writeSerial(0x96) == -1)
   {
     return false;
   }
@@ -101,7 +99,7 @@ bool AVR::setPosition(float posX, float posY, float posYaw)
 {
   posX *= M_TICKS;
   posY *= M_TICKS;
-  /* Normalizace rozsahu souøadnic. */
+  /* Normalization of coordinate ranges. */
   if (posY > 30000)
   {
     posY = 30000;
@@ -119,21 +117,21 @@ bool AVR::setPosition(float posX, float posY, float posYaw)
     posYaw += 2 * M_PI;
   }
 
-  if (sp.writeSerial(0xAA) == -1)
+  if (sp_.writeSerial(0xAA) == -1)
   {
     return false;
   }
-  if (sp.writeSerialInt((int16_t)posX) != 2)
-  {
-    return false;
-  }
-  ;
-  if (sp.writeSerialInt((int16_t)posY) != 2)
+  if (sp_.writeSerialInt((int16_t)posX) != 2)
   {
     return false;
   }
   ;
-  if (sp.writeSerialInt((int16_t)(posYaw * 10000.0)) != 2)
+  if (sp_.writeSerialInt((int16_t)posY) != 2)
+  {
+    return false;
+  }
+  ;
+  if (sp_.writeSerialInt((int16_t)(posYaw * 10000.0)) != 2)
   {
     return false;
   }
@@ -146,12 +144,12 @@ bool AVR::setPosition(float posX, float posY, float posYaw)
  */
 bool AVR::getPosition(float* px, float* py, float* pa)
 {
-  if (!sp.serialFlush())
+  if (!sp_.serialFlush())
   {
     return false;
   }
   /* Request. */
-  if (sp.writeSerial(0x55) == -1)
+  if (sp_.writeSerial(0x55) == -1)
   {
     return false;
   }
@@ -160,7 +158,7 @@ bool AVR::getPosition(float* px, float* py, float* pa)
   int16_t y;
   int16_t a;
 
-  if (!sp.readSerialInt(&x))
+  if (!sp_.readSerialInt(&x))
   {
     std::cerr << "Error reading x\n";
     *px = 0.0;
@@ -168,7 +166,7 @@ bool AVR::getPosition(float* px, float* py, float* pa)
     *pa = 0.0;
     return false;
   }
-  if (!sp.readSerialInt(&y))
+  if (!sp_.readSerialInt(&y))
   {
     std::cerr << "Error reading y\n";
     *px = 0.0;
@@ -176,7 +174,7 @@ bool AVR::getPosition(float* px, float* py, float* pa)
     *pa = 0.0;
     return false;
   }
-  if (!sp.readSerialInt(&a))
+  if (!sp_.readSerialInt(&a))
   {
     std::cerr << "Error reading yaw\n";
     *px = 0.0;
@@ -198,37 +196,37 @@ bool AVR::getPosition(float* px, float* py, float* pa)
  */
 bool AVR::getIRs(float* sh1, float* sh2, float* sh3, float* sh4)
 {
-  if (!sp.serialFlush())
+  if (!sp_.serialFlush())
   {
     return false;
   }
 
   /* Request. */
-  if (sp.writeSerial(0x69) == -1)
+  if (sp_.writeSerial(0x69) == -1)
   {
     return false;
   }
 
   unsigned char raw;
-  if (!sp.readSerial(&raw))
+  if (!sp_.readSerial(&raw))
   {
     return false;
   }
   *sh1 = static_cast<float>(raw);
 
-  if (!sp.readSerial(&raw))
+  if (!sp_.readSerial(&raw))
   {
     return false;
   }
   *sh2 = static_cast<float>(raw);
 
-  if (!sp.readSerial(&raw))
+  if (!sp_.readSerial(&raw))
   {
     return false;
   }
   *sh3 = static_cast<float>(raw);
 
-  if (!sp.readSerial(&raw))
+  if (!sp_.readSerial(&raw))
   {
     return false;
   }
@@ -243,26 +241,26 @@ bool AVR::getIRs(float* sh1, float* sh2, float* sh3, float* sh4)
  */
 bool AVR::getSonars(float* sonar1, float* sonar2)
 {
-  if (!sp.serialFlush())
+  if (!sp_.serialFlush())
   {
     return false;
   }
 
   /* Request. */
-  if (sp.writeSerial(0x5A) == -1)
+  if (sp_.writeSerial(0x5A) == -1)
   {
     return false;
   }
 
   unsigned char raw;
-  if (!sp.readSerial(&raw))
+  if (!sp_.readSerial(&raw))
   {
     return false;
   }
   /* Raw sonar readings are in centimeters. Convert to meters. */
   *sonar1 = static_cast<float>(raw) / 100.0;
 
-  if (!sp.readSerial(&raw))
+  if (!sp_.readSerial(&raw))
   {
     return false;
   }
@@ -275,19 +273,19 @@ bool AVR::getSonars(float* sonar1, float* sonar2)
 bool AVR::getBumpers(uint8_t* bump1, uint8_t* bump2, uint8_t* bump3, uint8_t* bump4,
     uint8_t* bump5, uint8_t* bump6, uint8_t* bump7, uint8_t* bump8)
 {
-  if (!sp.serialFlush())
+  if (!sp_.serialFlush())
   {
     return false;
   }
 
   /* Request. */
-  if (sp.writeSerial(0x66) == -1)
+  if (sp_.writeSerial(0x66) == -1)
   {
     return false;
   }
 
   unsigned char bumps;
-  if (!sp.readSerial(&bumps))
+  if (!sp_.readSerial(&bumps))
   {
     return false;
   }

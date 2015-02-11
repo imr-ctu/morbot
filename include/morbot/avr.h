@@ -24,7 +24,7 @@ class AVR
 
   private:
 
-    SerialPort sp;
+    SerialPort sp_;
 };
 
 

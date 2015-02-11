@@ -6,7 +6,7 @@ This is to let the microprocessor time to treat the value. */
 
 SerialPort::SerialPort()
 {
-  fd = -1;
+  fd_ = -1;
 }
 
 SerialPort::~SerialPort()
@@ -15,23 +15,23 @@ SerialPort::~SerialPort()
     closeSerial();
 }
 
-/*
- * Nastavení sériového portu pro komunikaci
- * s øídicí deskou. 
+/** Set up serial communication parameters
+ *
+ * @return True if everything went allright.
  */
-void SerialPort::setSerialParams()
+bool SerialPort::setSerialParams()
 {
   termios options;
-  if (!isatty(fd))
+  if (!isatty(fd_))
   {
     std::cerr << "Not a terminal.\n";
-    exit(EXIT_FAILURE);
+    return false;
   }
 
   /* Save old attributes. */    
-  tcgetattr(fd, &savedAttributes);
+  tcgetattr(fd_, &saved_attributes_);
   /* Set up new parameters. */
-  tcgetattr(fd, &options);
+  tcgetattr(fd_, &options);
   /* Set up speed. */        
   cfsetispeed(&options, B57600);
   cfsetospeed(&options, B57600);
@@ -55,8 +55,9 @@ void SerialPort::setSerialParams()
   options.c_cc[VMIN] = 1;
   /* No timeout. */
   options.c_cc[VTIME] = 0;
-  tcsetattr(fd, TCSAFLUSH, &options);
+  tcsetattr(fd_, TCSAFLUSH, &options);
   std::cout << "Serial port parameters set.\n";
+  return true;
 }
 
 /** Reset to old parameters.
@@ -64,45 +65,48 @@ void SerialPort::setSerialParams()
 void SerialPort::resetSerialParams()
 {
   std::cout << "Serial port parameters reset.\n";
-  tcsetattr(fd, TCSAFLUSH, &savedAttributes);
+  tcsetattr(fd_, TCSAFLUSH, &saved_attributes_);
 }
 
 /** Open the serial port.
+ *
+ * @return True if everything went allright.
  */
-void SerialPort::openSerial(const char *port)
+bool SerialPort::openSerial(const char* port)
 {
-  fd = open(port, O_RDWR | O_NOCTTY);
-  if(fd == -1)
+  fd_ = open(port, O_RDWR | O_NOCTTY);
+  if(fd_ == -1)
   {
     std::cerr << "ERROR opening device " << port << std::endl;
-    exit(EXIT_FAILURE);
+    return false;
   }
-  else
+  if (!setSerialParams())
   {
-    setSerialParams();
-    std::cout << "Serial port " << port << " opened.\n";
+    return false;
   }
+  std::cout << "Serial port " << port << " opened.\n";
+  return true;
 }
 
 /** Return true if the port is open.
  */
 bool SerialPort::isOpened()
 {
-  return (fd >= 0);
+  return (fd_ >= 0);
 }	
 
 /** Close the serial port.
  */
 void SerialPort::closeSerial()
 {
-  if (fd < 0)
+  if (fd_ < 0)
   {
     std::cout << "Port was not open, ignoring.\n";
     return;
   }
   resetSerialParams();
-  close(fd);
-  fd = -1;
+  close(fd_);
+  fd_ = -1;
   std::cout << "Port closed.\n";
 }
 
@@ -112,7 +116,7 @@ void SerialPort::closeSerial()
  */
 int SerialPort::writeSerial(unsigned char msg)
 {
-  const int written = write(fd, &msg, sizeof(msg));
+  const int written = write(fd_, &msg, sizeof(msg));
   if(written < 0)
   {
     std::cerr << "ERROR writing on serial port:" << std::strerror(errno) << std::endl;
@@ -169,7 +173,7 @@ int SerialPort::writeSerialFloat(float f)
 int SerialPort::serialAvailable()
 {
   int available = 0;
-  ioctl(fd, FIONREAD, &available);
+  ioctl(fd_, FIONREAD, &available);
   return available;
 }
 
@@ -182,7 +186,7 @@ bool SerialPort::serialFlush()
   while (serialAvailable() > 0)
   {
     char buf;
-    const int nbytes = read(fd, &buf, sizeof(buf));
+    const int nbytes = read(fd_, &buf, sizeof(buf));
     if (nbytes == -1)
     {
       std::cerr << "Serial port read error on flush: " << std::strerror(errno) << std::endl;
@@ -201,7 +205,7 @@ bool SerialPort::readSerial(unsigned char* c)
   // Initialize file descriptor sets
   fd_set read_fds;
   FD_ZERO(&read_fds);
-  FD_SET(fd, &read_fds);
+  FD_SET(fd_, &read_fds);
 
   // Set timeout to 1.0 seconds
   struct timeval timeout;
@@ -210,7 +214,7 @@ bool SerialPort::readSerial(unsigned char* c)
 
   // Wait for input to become ready or until the timeout; the first parameter is
   // 1 more than the largest file descriptor in any of the sets
-  int select_ret = select(fd + 1, &read_fds, NULL, NULL, &timeout);
+  int select_ret = select(fd_ + 1, &read_fds, NULL, NULL, &timeout);
   if (select_ret == -1)
   {
     // error.
@@ -223,8 +227,8 @@ bool SerialPort::readSerial(unsigned char* c)
     std::cerr << "Nothing to be read on serial port" << std::endl;
     return false;
   }
-  // fd is ready for reading
-  const int nbytes = read(fd, c, sizeof(*c));
+  // fd_ is ready for reading
+  const int nbytes = read(fd_, c, sizeof(*c));
   if (nbytes == -1)
   {
     std::cerr << "Cannot read on serial port: " << std::strerror(errno) << std::endl;
