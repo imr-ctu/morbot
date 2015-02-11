@@ -3,8 +3,6 @@
 
 #include <morbot/avr.h>
 
-#define TIMEOUT 10
-
 /* Pulse count per meter */
 const double M_TICKS = 1164.0; 
 //const double RAD_TICKS = 250.8;  //ticks per rad
@@ -80,17 +78,14 @@ bool AVR::setSpeedAndTurn(signed char speed, signed char turn)
   {
     return false;
   }
-  usleep(TIMEOUT);
   if (sp.writeSerial((unsigned char)speed) == -1)
   {
     return false;
   }
-  usleep(TIMEOUT);
   if (sp.writeSerial((unsigned char)turn) == -1)
   {
     return false;
   }
-  usleep(TIMEOUT);
   if (sp.writeSerial(0x96) == -1)
   {
     return false;
@@ -167,14 +162,26 @@ bool AVR::getPosition(float* px, float* py, float* pa)
 
   if (!sp.readSerialInt(&x))
   {
+    std::cerr << "Error reading x\n";
+    *px = 0.0;
+    *py = 0.0;
+    *pa = 0.0;
     return false;
   }
   if (!sp.readSerialInt(&y))
   {
+    std::cerr << "Error reading y\n";
+    *px = 0.0;
+    *py = 0.0;
+    *pa = 0.0;
     return false;
   }
   if (!sp.readSerialInt(&a))
   {
+    std::cerr << "Error reading yaw\n";
+    *px = 0.0;
+    *py = 0.0;
+    *pa = 0.0;
     return false;
   }
 

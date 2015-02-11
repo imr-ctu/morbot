@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <std_msgs/String.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose2D.h>
@@ -28,6 +29,9 @@ void velCallback(const geometry_msgs::Twist::ConstPtr& msg)
     a = 127;
   if (a < -128)
     a = -128;
+  signed char v_char = static_cast<signed char>(v);
+  signed char a_char = static_cast<signed char>(a);
+  ROS_INFO("(v, a): (%d, %d)", v_char, a_char);
   if (!_avr.setSpeedAndTurn(static_cast<signed char>(v), static_cast<signed char>(a)))
   {
     ROS_ERROR("Communication error on serial port");
@@ -43,6 +47,11 @@ int main(int argc, char **argv)
   //   _avr.setSpeedAndTurn(10,0);
   ros::init(argc, argv, "morbot");
   ros::NodeHandle nh("~");
+
+  if(ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info))
+  {
+    ros::console::notifyLoggerLevelsChanged();
+  }
 
   std::string device_name;
   nh.param<std::string>("serial_port", device_name, "/dev/ttyUSB0");
@@ -75,37 +84,37 @@ int main(int argc, char **argv)
   {
     ros::spinOnce();
 
-    ROS_DEBUG("Getting position");
+    ROS_DEBUG_NAMED("superdebug", "Getting position");
     if (!_avr.getPosition(&x, &y, &yaw))
     {
-      ROS_FATAL_STREAM("Communication error on " << device_name << " when getting position, exiting");
-      return 1;
+      ROS_ERROR_STREAM("Communication error on " << device_name << " when getting position");
     }
+    else
+    {
+      ros::Time timestamp = ros::Time::now();
 
-    ros::Time timestamp = ros::Time::now();
+      geometry_msgs::Pose2D pose;
+      pose.x = x;
+      pose.y = y;
+      pose.theta = yaw;
+      pose_pub.publish(pose); 
 
-    ROS_DEBUG("Sending messages");
-    geometry_msgs::Pose2D pose;
-    pose.x = x;
-    pose.y = y;
-    pose.theta = yaw;
-    pose_pub.publish(pose); 
+      nav_msgs::Odometry odom;
+      odom.header.frame_id = "world";
+      odom.child_frame_id = "base_link";
+      odom.pose.pose.position.x = x;
+      odom.pose.pose.position.y = y;
+      geometry_msgs::Quaternion q_yaw = tf::createQuaternionMsgFromYaw(yaw);
+      odom.pose.pose.orientation = q_yaw;
+      odom.header.stamp = timestamp;
+      odom_pub.publish(odom);
 
-    nav_msgs::Odometry odom;
-    odom.header.frame_id = "world";
-    odom.child_frame_id = "base_link";
-    odom.pose.pose.position.x = x;
-    odom.pose.pose.position.y = y;
-    geometry_msgs::Quaternion q_yaw = tf::createQuaternionMsgFromYaw(yaw);
-    odom.pose.pose.orientation = q_yaw;
-    odom.header.stamp = timestamp;
-    odom_pub.publish(odom);
-
-    static tf::TransformBroadcaster br;
-    tf::Transform transform;
-    transform.setOrigin(tf::Vector3(x, y, 0.0));
-    transform.setRotation(tf::createQuaternionFromYaw(yaw));
-    br.sendTransform(tf::StampedTransform(transform, timestamp, "world", "base_link"));
+      static tf::TransformBroadcaster br;
+      tf::Transform transform;
+      transform.setOrigin(tf::Vector3(x, y, 0.0));
+      transform.setRotation(tf::createQuaternionFromYaw(yaw));
+      br.sendTransform(tf::StampedTransform(transform, timestamp, "world", "base_link"));
+    }
     loop_rate.sleep();
   }
 

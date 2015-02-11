@@ -1,7 +1,8 @@
 #include <morbot/serialport.h>
 
-/* usleep after a write operation on serial port, in microsecond */
-#define TIMEOUT_AFTER_WRITE 10
+/* usleep after a write operation on serial port, in microsecond.
+This is to let the microprocessor time to treat the value. */
+#define SLEEP_AFTER_WRITE 100
 
 SerialPort::SerialPort()
 {
@@ -114,9 +115,9 @@ int SerialPort::writeSerial(unsigned char msg)
   const int written = write(fd, &msg, sizeof(msg));
   if(written < 0)
   {
-    std::cerr << "ERROR writing on serial port.";
+    std::cerr << "ERROR writing on serial port:" << std::strerror(errno) << std::endl;
   }
-  usleep(TIMEOUT_AFTER_WRITE);
+  usleep(SLEEP_AFTER_WRITE);
   return written;
 }
 
@@ -180,9 +181,11 @@ bool SerialPort::serialFlush()
 {
   while (serialAvailable() > 0)
   {
-    const int nbytes = read(fd, NULL, sizeof(char));
+    char buf;
+    const int nbytes = read(fd, &buf, sizeof(buf));
     if (nbytes == -1)
     {
+      std::cerr << "Serial port read error on flush: " << std::strerror(errno) << std::endl;
       return false;
     }
   }
@@ -191,17 +194,13 @@ bool SerialPort::serialFlush()
 
 /** Read a character from the serial port.
  *
- * @return True if everything went allright.
+ * @return True if everything went allright (one character read).
  */
 bool SerialPort::readSerial(unsigned char* c)
 {
   // Initialize file descriptor sets
   fd_set read_fds;
-  fd_set write_fds;
-  fd_set except_fds;
   FD_ZERO(&read_fds);
-  FD_ZERO(&write_fds);
-  FD_ZERO(&except_fds);
   FD_SET(fd, &read_fds);
 
   // Set timeout to 1.0 seconds
@@ -209,21 +208,26 @@ bool SerialPort::readSerial(unsigned char* c)
   timeout.tv_sec = 1;
   timeout.tv_usec = 0;
 
-  // Wait for input to become ready or until the time out; the first parameter is
+  // Wait for input to become ready or until the timeout; the first parameter is
   // 1 more than the largest file descriptor in any of the sets
-  if (select(fd + 1, &read_fds, &write_fds, &except_fds, &timeout) == 1)
+  int select_ret = select(fd + 1, &read_fds, NULL, NULL, &timeout);
+  if (select_ret == -1)
   {
-    // fd is ready for reading
-    const int nbytes = read(fd, c, sizeof(*c));
-    if (nbytes == -1)
-    {
-      std::cerr << "Cannot read on serial port\n";
-      return false;
-    }
+    // error.
+    std::cerr << "Serial port select error: " << std::strerror(errno) << std::endl;
+    return false;
   }
-  else
+  if (select_ret == 0)
   {
-    // timeout or error
+    // timeout.
+    std::cerr << "Nothing to be read on serial port" << std::endl;
+    return false;
+  }
+  // fd is ready for reading
+  const int nbytes = read(fd, c, sizeof(*c));
+  if (nbytes == -1)
+  {
+    std::cerr << "Cannot read on serial port: " << std::strerror(errno) << std::endl;
     return false;
   }
   return  true;

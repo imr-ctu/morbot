@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <stdint.h>
+#include <cstring>
+#include <cerrno>
 
 class SerialPort
 {
