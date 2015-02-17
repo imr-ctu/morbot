@@ -1,0 +1,3 @@
+<launch>
+	<node name="morbot" pkg="morbot" type="morbot" output="screen" />
+</launch>
