@@ -31,8 +31,8 @@ void velCallback(const geometry_msgs::Twist::ConstPtr& msg)
     a = -128;
   signed char v_char = static_cast<signed char>(v);
   signed char a_char = static_cast<signed char>(a);
-  ROS_INFO("(v, a): (%d, %d)", v_char, a_char);
-  if (!_avr.setSpeedAndTurn(static_cast<signed char>(v), static_cast<signed char>(a)))
+  ROS_DEBUG("Set linear and angular velocities: (%d, %d)", v_char, a_char);
+  if (!_avr.setSpeedAndTurn(v_char, a_char))
   {
     ROS_ERROR("Communication error on serial port");
   }
