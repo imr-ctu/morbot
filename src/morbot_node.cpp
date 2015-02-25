@@ -1,15 +1,12 @@
-#include <ros/ros.h>
-#include <ros/console.h>
-#include <std_msgs/String.h>
+#include <string>
+
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose2D.h>
 #include <nav_msgs/Odometry.h>
+#include <ros/ros.h>
+#include <std_msgs/String.h>
+#include <std_srvs/Empty.h>
 #include <tf/transform_broadcaster.h>
-
-#include <pthread.h>
-#include <math.h>
-#include <sstream>
-#include <string>
 
 #include <morbot/avr.h>
 
@@ -38,20 +35,19 @@ void velCallback(const geometry_msgs::Twist::ConstPtr& msg)
   }
 }
 
+bool resetOdometryCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  return _avr.setPosition(0, 0, 0);
+}
+
 int main(int argc, char **argv)
 {
   float x;
   float y;
   float yaw;
 
-  //   _avr.setSpeedAndTurn(10,0);
   ros::init(argc, argv, "morbot");
   ros::NodeHandle nh("~");
-
-  if(ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info))
-  {
-    ros::console::notifyLoggerLevelsChanged();
-  }
 
   std::string device_name;
   nh.param<std::string>("serial_port", device_name, "/dev/ttyUSB0");
@@ -71,6 +67,8 @@ int main(int argc, char **argv)
     ROS_FATAL_STREAM("Communication error on " << device_name << " when setting velocities, exiting");
     return 1;
   }
+
+  ros::ServiceServer reset_odom_server = nh.advertiseService("reset_odometry", resetOdometryCallback);
 
   ros::Subscriber vel = nh.subscribe("cmd_vel", 1, velCallback);
 

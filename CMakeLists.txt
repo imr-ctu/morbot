@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   roscpp
   std_msgs
+  std_srvs
   tf
 )
 
@@ -84,7 +85,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES morbot
-#  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp std_msgs tf
+#  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp std_msgs std_srvs tf
 #  DEPENDS system_lib
 )
 
