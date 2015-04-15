@@ -8,6 +8,7 @@
 #include <std_srvs/Empty.h>
 #include <tf/transform_broadcaster.h>
 
+#include <morbot/SetOdometry.h>
 #include <morbot/avr.h>
 
 AVR _avr;
@@ -37,7 +38,12 @@ void velCallback(const geometry_msgs::Twist::ConstPtr& msg)
 
 bool resetOdometryCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  return _avr.setPosition(0, 0, 0);
+  return _avr.setPosition(0.0, 0.0, 0.0);
+}
+
+bool setOdometryCallback(morbot::SetOdometryRequest& req, morbot::SetOdometryResponse& res)
+{
+  return _avr.setPosition(req.pose.position.x, req.pose.position.y, tf::getYaw(req.pose.orientation));
 }
 
 int main(int argc, char **argv)
@@ -69,6 +75,7 @@ int main(int argc, char **argv)
   }
 
   ros::ServiceServer reset_odom_server = nh.advertiseService("reset_odometry", resetOdometryCallback);
+  ros::ServiceServer set_odom_server = nh.advertiseService("set_odometry", setOdometryCallback);
 
   ros::Subscriber vel = nh.subscribe("cmd_vel", 1, velCallback);
 

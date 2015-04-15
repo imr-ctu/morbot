@@ -54,11 +54,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  SetOdometry.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -68,10 +67,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -85,7 +84,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES morbot
-#  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp std_msgs std_srvs tf
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp std_msgs std_srvs tf
 #  DEPENDS system_lib
 )
 
